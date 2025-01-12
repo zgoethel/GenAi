@@ -5,9 +5,6 @@ namespace GenAi.Backend.Services;
 public class UniqueConversation(
     OllamaService ollama)
 {
-    public const string PrefixUser = "You: ";
-    public const string PrefixAssistant = "Assistant: ";
-
     public List<ChatMessage> ChatHistory = [];
 
     public async Task<ChatMessage?> SendMessage(ChatMessage message, bool respond = true, Func<StreamingChatCompletionUpdate, Task>? wordCallback = null, TimeSpan? waitTimeout = null)

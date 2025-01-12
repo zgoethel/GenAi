@@ -43,12 +43,12 @@ public class HomeViewModel(
 
             switch (message)
             {
-                case UniqueConversation.PrefixUser:
+                case SD.Labels.PrefixUser:
                     currentChatMessage.Color = "#d2efe0";
                     currentChatMessage.Label = message;
                     break;
 
-                case UniqueConversation.PrefixAssistant:
+                case SD.Labels.PrefixAssistant:
                     currentChatMessage.Color = "#bbd3f5";
                     currentChatMessage.Label = message;
                     break;

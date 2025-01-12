@@ -69,6 +69,7 @@ public static class SD
 
     public static class Labels
     {
-
+        public const string PrefixUser = "You: ";
+        public const string PrefixAssistant = "Assistant: ";
     }
 }

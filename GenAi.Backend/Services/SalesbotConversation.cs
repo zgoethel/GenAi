@@ -41,7 +41,7 @@ public class SalesbotConversation(
 
     public async Task Converse(Func<string, Task> write, Func<Task> writeLine, Func<CancellationToken, Task<string>> readLine, CancellationToken cancellationToken)
     {
-        await write(UniqueConversation.PrefixAssistant);
+        await write(SD.Labels.PrefixAssistant);
 
         await Begin(async (word) =>
         {
@@ -79,11 +79,11 @@ public class SalesbotConversation(
                 userPrompt = possibleResponses[i - 1];
             }
 
-            await write(UniqueConversation.PrefixUser);
+            await write(SD.Labels.PrefixUser);
             await write(userPrompt);
             await writeLine();
 
-            await write(UniqueConversation.PrefixAssistant);
+            await write(SD.Labels.PrefixAssistant);
 
             if (cancellationToken.IsCancellationRequested || isDisposed)
             {

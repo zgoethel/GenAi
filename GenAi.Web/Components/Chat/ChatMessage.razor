@@ -1,9 +1,10 @@
-﻿@using GenAi.Backend.Services
+﻿@using GenAi.Backend
+@using GenAi.Backend.ViewModels
 @using Markdig
 @using System.Web
 @inject IJSRuntime js
 
-<div class="@(Vm.AutoCollapse ? "auto-collapse" : "") @(Vm.Label == UniqueConversation.PrefixUser ? "ps-5" : "pe-5")"
+<div class="@(Vm.AutoCollapse ? "auto-collapse" : "") @(Vm.Label == SD.Labels.PrefixUser ? "ps-5" : "pe-5")"
     style="padding-bottom: 32px;margin-bottom: -20px;"
     @ref="@div">
 
@@ -27,7 +28,7 @@
 
 @code {
     [Parameter]
-    public GenAi.Backend.ViewModels.ChatMessageViewModel Vm { get; set; } = new();
+    public ChatMessageViewModel Vm { get; set; } = new();
 
     private string Html => Markdown.ToHtml(HttpUtility.HtmlEncode(Vm.Content));
 
