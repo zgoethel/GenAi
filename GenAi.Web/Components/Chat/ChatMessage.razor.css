@@ -1,12 +1,26 @@
-﻿.auto-collapse > div {
+﻿.chat-item {
+    font-size: 0.9rem;
+}
+
+    .chat-item .chat-label {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+.auto-collapse > div {
     background: darkgrey;
     color: grey;
-    font-size: 0.7rem !important;
+    font-size: 0.7rem;
     transition: background 1.4s, font-size 1.4s;
 }
 
     .auto-collapse:last-of-type > div {
         background: white;
         color: black;
-        font-size: 0.9rem !important;
+        font-size: 0.9rem;
     }
+
+.chat-item {
+    padding-bottom: 32px;
+    margin-bottom: -20px;
+}

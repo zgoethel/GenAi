@@ -12,8 +12,7 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="fixed-top-bar px-4 pb-3 pt-4 bg-white border-bottom border-dark"
-    style="position: fixed;top: 0;left: 0;width: 100%;z-index: 10;box-shadow: 0 0.5rem 2rem 0.5rem #e9e9e9;">
+<div class="fixed-top-bar px-4 pb-3 pt-4">
 
     <h4 class="m-0">Chat with Salesbot</h4>
 
@@ -21,8 +20,7 @@
 
 <div class="d-flex flex-column align-items-center">
 
-    <div class="chat-log"
-        style="padding-top: 90px;width: 600px;max-width: 100%;">
+    <div class="chat-log">
 
         @foreach (var item in vm.ChatLog)
         {
@@ -38,27 +36,26 @@
 
     <hr style="opacity: 0.5;" />
     
-    <EditForm autocomplete="off"
-        Model="@_o"
-        class="d-flex flex-row align-items-center gap-0"
-        style="padding-bottom: 32px;margin-bottom: -20px;"
-        OnSubmit="@(async () => await vm.ProvideInput(userInput))">
+    @* Container added to enable CSS isolation *@
+    <div>
+        <EditForm autocomplete="off" Model="@_o"
+            class="user-chat-form d-flex flex-row align-items-center"
+            OnSubmit="@(async () => await vm.ProvideInput(userInput))">
 
-        <input type="text" id="userChatInput"
-            class="form-control flex-grow-1 flex-shrink-1 shadow border-dark py-3"
-            style="border-top-right-radius: 0;border-bottom-right-radius: 0;"
-            @bind="@userInput" @bind:event="oninput" />
+            <input type="text" id="userChatInput"
+                class="form-control flex-grow-1 flex-shrink-1 shadow border-dark py-3"
+                @bind="@userInput" @bind:event="oninput" />
 
-        <button type="submit"
-            class="btn btn-primary border-dark py-3"
-            style="border-top-left-radius: 0;border-bottom-left-radius: 0;border-left: 0;"
-            disabled="@string.IsNullOrEmpty(userInput)">
+            <button type="submit"
+                class="btn btn-primary border-dark py-3"
+                disabled="@string.IsNullOrEmpty(userInput)">
                 
-            Send
+                Send
             
-        </button>
+            </button>
 
-    </EditForm>
+        </EditForm>
+    </div>
 
 } else
 {
