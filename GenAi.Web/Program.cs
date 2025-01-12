@@ -59,7 +59,6 @@ namespace GenAi.Web
             }
 
             app.UseHttpsRedirection();
-
             app.UseStaticFiles();
             app.UseAntiforgery();
             app.UseRouting();

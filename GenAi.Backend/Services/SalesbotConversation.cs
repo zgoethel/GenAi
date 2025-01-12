@@ -39,7 +39,11 @@ public class SalesbotConversation(
         return response!.Text!;
     }
 
-    public async Task Converse(Func<string, Task> write, Func<Task> writeLine, Func<CancellationToken, Task<string>> readLine, CancellationToken cancellationToken)
+    public async Task Converse(
+        Func<string, Task> write,
+        Func<Task> writeLine,
+        Func<CancellationToken, Task<string>> readLine,
+        CancellationToken cancellationToken)
     {
         await write(SD.Labels.PrefixAssistant);
 
