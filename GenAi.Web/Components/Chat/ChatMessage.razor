@@ -1,0 +1,65 @@
+﻿@using GenAi.Backend.Services
+@using Markdig
+@using System.Web
+@inject IJSRuntime js
+
+<div class="@(Vm.AutoCollapse ? "auto-collapse" : "") @(Vm.Label == UniqueConversation.PrefixUser ? "ps-5" : "pe-5")"
+    style="padding-bottom: 32px;margin-bottom: -20px;"
+    @ref="@div">
+
+    <div class="d-flex flex-column gap-2 rounded border p-3 pb-0 shadow-sm" style="font-size: 0.9rem;background: @(Vm.Color);">
+
+        @if (!string.IsNullOrEmpty(Vm.Label))
+        {
+            <strong style="font-size: 0.8rem;opacity: 0.7;">@Vm.Label</strong>
+        }
+
+        @if (string.IsNullOrEmpty(Vm.Content))
+        {
+            <div class="spinner-border mb-2" role="status">
+            </div>            
+        }
+        <span>@((MarkupString)Html)</span>
+
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public GenAi.Backend.ViewModels.ChatMessageViewModel Vm { get; set; } = new();
+
+    private string Html => Markdown.ToHtml(HttpUtility.HtmlEncode(Vm.Content));
+
+    private ElementReference div;
+    private bool refocus = true;
+    private bool shouldRender = true;
+
+    protected override bool ShouldRender() => shouldRender;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        Vm.Changed += async () =>
+        {
+            refocus = true;
+            shouldRender = true;
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        shouldRender = false;
+
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (refocus)
+        {
+            refocus = false;
+
+            await js.InvokeVoidAsync("scrollElementIntoView", div);
+        }
+    }
+}

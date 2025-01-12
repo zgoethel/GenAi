@@ -1,0 +1,12 @@
+﻿.auto-collapse > div {
+    background: darkgrey;
+    color: grey;
+    font-size: 0.7rem !important;
+    transition: background 1.4s, font-size 1.4s;
+}
+
+    .auto-collapse:last-of-type > div {
+        background: white;
+        color: black;
+        font-size: 0.9rem !important;
+    }
