@@ -12,9 +12,17 @@
 
 <PageTitle>Home</PageTitle>
 
-<div class="fixed-top-bar px-4 pb-3 pt-4">
+<div class="fixed-top-bar d-flex flex-row align-items-center gap-2 px-4 pb-3 pt-4">
 
-    <h4 class="m-0">Chat with Salesbot</h4>
+    <h4 class="m-0">Chat with</h4>
+
+    <select class="form-select" disabled="disabled">
+
+        <option>Generalbot</option>
+
+        <option>Salesbot</option>
+
+    </select>
 
 </div>
 
@@ -40,7 +48,11 @@
     <div>
         <EditForm autocomplete="off" Model="@_o"
             class="user-chat-form d-flex flex-row align-items-center"
-            OnSubmit="@(async () => await vm.ProvideInput(userInput))">
+            OnSubmit="@(async () =>
+            {
+                await vm.ProvideInput(userInput);
+                userInput = "";
+            })">
 
             <input type="text" id="userChatInput"
                 class="form-control flex-grow-1 flex-shrink-1 shadow border-dark py-3"
@@ -89,7 +101,16 @@
         {
             focusUserChatInput = false;
 
-            await js.InvokeVoidAsync("focusUserChatInput");
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(200);
+                    await js.InvokeVoidAsync("focusUserChatInput");
+                } catch (Exception)
+                {
+                }
+            });
         }
 
         if (!firstRender)

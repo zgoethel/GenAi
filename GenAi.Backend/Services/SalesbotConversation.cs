@@ -77,8 +77,7 @@ public class SalesbotConversation(
             }
 
             var userPrompt = await readLine(cancellationToken);
-            if (int.TryParse(userPrompt, out var i)
-                && i >= 1 && i <= 3)
+            if (int.TryParse(userPrompt, out var i) && i >= 1 && i <= 3)
             {
                 userPrompt = possibleResponses[i - 1];
             }

@@ -15,8 +15,10 @@ namespace GenAi.Web
                 .AddInteractiveServerComponents();
 
             builder.Services.AddSingleton<OllamaService>();
+            builder.Services.AddSingleton<WebUiService>();
 
             builder.Services.AddTransient<UniqueConversation>();
+            builder.Services.AddTransient<GeneralbotConversation>();
             builder.Services.AddTransient<SalesbotConversation>();
 
             builder.Services.AddTransient<HomeViewModel>();

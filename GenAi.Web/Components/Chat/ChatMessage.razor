@@ -29,13 +29,13 @@
     [Parameter]
     public ChatMessageViewModel Vm { get; set; } = new();
 
-    private string Html => Markdown.ToHtml(HttpUtility.HtmlEncode(Vm.Content));
+    private string Html => Markdown.ToHtml(/*HttpUtility.HtmlEncode(*/Vm.Content/*)*/);
 
     private ElementReference div;
     private bool refocus = true;
     private bool shouldRender = true;
 
-    protected override bool ShouldRender() => shouldRender;
+    protected override bool ShouldRender() => shouldRender || refocus;
 
     protected override void OnInitialized()
     {
@@ -57,9 +57,18 @@
 
         if (refocus)
         {
-            refocus = false;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(200);
+                    refocus = false;
 
-            await js.InvokeVoidAsync("scrollElementIntoView", div);
+                    await js.InvokeVoidAsync("scrollElementIntoView", div);
+                } catch (Exception)
+                {
+                }
+            });
         }
     }
 
