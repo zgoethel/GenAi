@@ -170,6 +170,9 @@ public class GeneralbotConversation(
                     await write("Generating an image with the following prompt:\n\n");
                     await write($"`{imagePrompt}`");
 
+                    await Task.Delay(200);
+                    await write("");
+
                     try
                     {
                         var image = await webUi.CreateAiResponse(imagePrompt);
@@ -216,7 +219,8 @@ public class GeneralbotConversation(
                         var dom = new HtmlDocument();
                         dom.LoadHtml(loadedContent);
 
-                        var plainText = dom.DocumentNode.InnerText;
+                        var plainText = dom.DocumentNode.SelectSingleNode("//body").InnerText;
+                        plainText = plainText[0..Math.Min(plainText.Length, 5000)];
 
 #if DEBUG
                         Console.WriteLine("HTML Content:");
@@ -227,6 +231,7 @@ public class GeneralbotConversation(
                         Console.WriteLine(plainText);
                         Console.WriteLine();
 #endif
+
                         await conversation.SendMessage(new ChatMessage(ChatRole.User, "Site Content:\n" + plainText), respond: false);
                         
                         await Tell("What do you think about that?", async (word) =>
