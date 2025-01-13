@@ -29,7 +29,7 @@ public class HomeViewModel(
     private TaskCompletionSource<string> userInputTask = new();
     private ChatMessageViewModel? currentChatMessage;
 
-    public GeneralbotConversation? Convo { get; set; }
+    public IConversation? Convo { get; set; }
 
     public List<ChatMessageViewModel> ChatLog { get; set; } = [];
 
@@ -94,13 +94,18 @@ public class HomeViewModel(
         oldTask.SetResult(message);
     }
 
-    public async Task BeginConversation(CancellationToken cancellationToken)
+    public async Task BeginConversation(string bot, CancellationToken cancellationToken)
     {
         if (Convo is not null)
         {
             throw new Exception("There is already an active conversation");
         }
-        Convo = sp.GetRequiredService<GeneralbotConversation>();
+        Convo = bot switch
+        {
+            SD.Assistants.Generalbot => sp.GetRequiredService<GeneralbotConversation>(),
+            SD.Assistants.Salesbot => sp.GetRequiredService<SalesbotConversation>(),
+            _ => sp.GetRequiredService<GeneralbotConversation>(),
+        };
 
         await Convo.Converse(CreateOrContinueMessage, EndMessage, ReadUserInput, cancellationToken);
     }

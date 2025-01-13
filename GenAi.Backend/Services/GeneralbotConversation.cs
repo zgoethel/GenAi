@@ -7,7 +7,7 @@ public class GeneralbotConversation(
     UniqueConversation conversation,
     OllamaService ollama,
     WebUiService webUi)
-    : IDisposable
+    : IDisposable, IConversation
 {
     public async Task<string> Begin(Func<StreamingChatCompletionUpdate, Task> wordCallback)
     {

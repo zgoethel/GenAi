@@ -1,14 +1,17 @@
 ﻿@page "/"
+@page "/{Bot}"
 @rendermode InteractiveServer
 @implements IDisposable
 @attribute [Authorize]
 
+@using GenAi.Backend
 @using GenAi.Backend.ViewModels
 @using GenAi.Web.Components.Chat
 @using Microsoft.AspNetCore.Authorization
 
 @inject HomeViewModel vm
 @inject IJSRuntime js
+@inject NavigationManager nav
 
 <PageTitle>Home</PageTitle>
 
@@ -16,11 +19,11 @@
 
     <h4 class="m-0">Chat with</h4>
 
-    <select class="form-select" disabled="disabled">
+    <select @bind="@Bot" @bind:after="@GoToBot" class="form-select">
 
-        <option>Generalbot</option>
+        <option>@SD.Assistants.Generalbot</option>
 
-        <option>Salesbot</option>
+        <option>@SD.Assistants.Salesbot</option>
 
     </select>
 
@@ -75,6 +78,9 @@
 }
 
 @code {
+    [Parameter]
+    public string Bot { get; set; } = "Generalbot";
+
     private readonly CancellationTokenSource cancellationToken = new();
     private readonly object _o = new();
 
@@ -119,7 +125,7 @@
         }
         try
         {
-            await vm.BeginConversation(cancellationToken.Token);
+            await vm.BeginConversation(Bot, cancellationToken.Token);
         } catch (Exception ex)
         {
             Console.WriteLine(ex.ToString());
@@ -129,5 +135,10 @@
     void IDisposable.Dispose()
     {
         cancellationToken.Cancel();
+    }
+
+    void GoToBot()
+    {
+        nav.NavigateTo(Bot, true);
     }
 }

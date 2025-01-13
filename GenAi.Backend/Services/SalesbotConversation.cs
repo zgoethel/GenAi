@@ -5,7 +5,7 @@ namespace GenAi.Backend.Services;
 public class SalesbotConversation(
     UniqueConversation conversation,
     OllamaService ollama)
-    : IDisposable
+    : IDisposable, IConversation
 {
     public async Task<string> Begin(Func<StreamingChatCompletionUpdate, Task> wordCallback)
     {
