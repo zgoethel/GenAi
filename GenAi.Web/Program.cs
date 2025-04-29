@@ -1,6 +1,7 @@
 using GenAi.Backend.Services;
 using GenAi.Backend.ViewModels;
 using GenAi.Web.Components;
+using Microsoft.Extensions.AI;
 
 namespace GenAi.Web
 {
@@ -73,6 +74,57 @@ namespace GenAi.Web
 
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var fileBytes = await File.ReadAllBytesAsync("cheers.jpg");
+
+                    var ollama = app.Services.GetRequiredService<OllamaService>();
+                    var response = await ollama.CreateAiResponse(
+                        [
+                            new ChatMessage(ChatRole.System,
+                                """
+                                Provide a summary of provided images.
+                                """),
+                            new ChatMessage(ChatRole.User,
+                                [
+                                    new ImageContent(fileBytes)
+                                ])
+                        ],
+                        endpointPrefix: "Vision");
+
+                    Console.WriteLine(response.Text);
+                } catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex.ToString());
+                }
+            });
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    var ollama = app.Services.GetRequiredService<OllamaService>();
+                    var response = await ollama.CreateAiResponse(
+                        [
+                            new ChatMessage(ChatRole.System,
+                                """
+                                Write an essay on the provided topic.
+                                """),
+                            new ChatMessage(ChatRole.User,
+                                """
+                                Numerical estimates of spline functions.
+                                """)
+                        ]);
+
+                    Console.WriteLine(response.Text);
+                } catch (Exception ex)
+                {
+                    Console.Error.WriteLine(ex.ToString());
+                }
+            });
 
             app.Run();
         }
