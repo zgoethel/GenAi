@@ -9,7 +9,7 @@ public class SalesbotConversation(
 {
     public async Task<string> Begin(Func<StreamingChatCompletionUpdate, Task> wordCallback)
     {
-        await conversation.SendMessage(ChatRole.System, SD.Prompts.SalesbotInstructions, respond: false);
+        await conversation.SendMessage(ChatRole/*.System*/.User, SD.Prompts.SalesbotInstructions, respond: false);
 
         var response = await conversation.SendMessage(ChatRole.User, SD.Prompts.SalesbotBegin, wordCallback: wordCallback);
         return response!.Text!;
@@ -24,9 +24,10 @@ public class SalesbotConversation(
             var possible = await ollama.CreateAiResponse(
                 conversation.ChatHistory
                     .Where((it) => it.Role == ChatRole.User || it.Role == ChatRole.Assistant)
-                    .Prepend(new(ChatRole.System, SD.Prompts.CustomerInstructions))
+                    .Prepend(new(ChatRole/*.System*/.User, SD.Prompts.CustomerInstructions))
                     .Append(new(ChatRole.User, SD.Prompts.CustomerBegin(alreadyUsed)))
-                    .ToList());
+                    .ToList(),
+                endpointPrefix: "Cheap");
 
             alreadyUsed.Add(possible.Text!);
             yield return possible.Text!;
