@@ -1,6 +1,7 @@
 using GenAi.Backend.Services;
 using GenAi.Backend.ViewModels;
 using GenAi.Web.Components;
+using Microsoft.Extensions.AI;
 
 namespace GenAi.Web
 {
@@ -50,7 +51,7 @@ namespace GenAi.Web
 
             builder.Services.AddAuthorization();
 
-            var app = builder.Build();
+            using var app = builder.Build();
 
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
@@ -74,7 +75,50 @@ namespace GenAi.Web
             app.MapRazorComponents<App>()
                 .AddInteractiveServerRenderMode();
 
-            app.Run();
+            app.Start();
+
+            Task.Run(async () =>
+            {
+                for (;; await Task.Delay(TimeSpan.FromMinutes(4)))
+                {
+                    var log = app.Services.GetRequiredService<ILogger<Program>>();
+                    var ollama = app.Services.GetRequiredService<OllamaService>();
+                    
+                    try
+                    {
+                        var prompt = "I say ping, you say pong. Ping";
+                        log.LogDebug("[Keepalive prompt] {}", prompt);
+                        var pong = await ollama.CreateAiResponse(
+                            [
+                                new ChatMessage(ChatRole.User, prompt)
+                            ]);
+
+                        log.LogDebug("[Keepalive response] {}", pong.Text?.Trim() ?? "null");
+                    } catch (Exception ex)
+                    {
+                        log.LogError(ex, "Failed to complete model keepalive task");
+                    }
+
+                    try
+                    {
+                        var prompt = "I say ping, you say pong. Ping";
+                        log.LogDebug("[Keepalive prompt] {}", prompt);
+                        var pong = await ollama.CreateAiResponse(
+                            [
+                                new ChatMessage(ChatRole.User, prompt)
+                            ],
+                            endpointPrefix: "Cheap");
+
+                        log.LogDebug("[Keepalive response] {}", pong.Text?.Trim() ?? "null");
+                    }
+                    catch (Exception ex)
+                    {
+                        log.LogError(ex, "Failed to complete model keepalive task");
+                    }
+                }
+            });
+
+            app.WaitForShutdown();
         }
     }
 }

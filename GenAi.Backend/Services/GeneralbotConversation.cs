@@ -11,7 +11,7 @@ public class GeneralbotConversation(
 {
     public async Task<string> Begin(Func<StreamingChatCompletionUpdate, Task> wordCallback)
     {
-        await conversation.SendMessage(ChatRole.System, SD.Prompts.GeneralbotInstructions, respond: false);
+        await conversation.SendMessage(ChatRole/*.System*/.User, SD.Prompts.GeneralbotInstructions, respond: false);
 
         var response = await conversation.SendMessage(ChatRole.User, SD.Prompts.GeneralbotBegin, wordCallback: wordCallback);
         return response!.Text!;
@@ -26,9 +26,10 @@ public class GeneralbotConversation(
             var possible = await ollama.CreateAiResponse(
                 conversation.ChatHistory
                     .Where((it) => it.Role == ChatRole.User || it.Role == ChatRole.Assistant)
-                    .Prepend(new(ChatRole.System, SD.Prompts.CustomerInstructions))
+                    .Prepend(new(ChatRole/*.System*/.User, SD.Prompts.CustomerInstructions))
                     .Append(new(ChatRole.User, SD.Prompts.CustomerBegin(alreadyUsed)))
-                    .ToList());
+                    .ToList(),
+                endpointPrefix: "Cheap");
 
             alreadyUsed.Add(possible.Text!);
             yield return possible.Text!;
@@ -60,7 +61,7 @@ public class GeneralbotConversation(
 
         var chatType = await ollama.CreateAiResponse(
             [
-                new(ChatRole.System, SD.Prompts.ChatIdentificationInstructions),
+                new(ChatRole/*.System*/.User, SD.Prompts.ChatIdentificationInstructions),
                 new(ChatRole.User, message)
             ]);
 
@@ -93,7 +94,7 @@ public class GeneralbotConversation(
     {
         var imagePrompt = await ollama.CreateAiResponse(
             [
-                new(ChatRole.System, SD.Prompts.ImagePromptInstructions),
+                new(ChatRole/*.System*/.User, SD.Prompts.ImagePromptInstructions),
                 new(ChatRole.User, message)
             ]);
 

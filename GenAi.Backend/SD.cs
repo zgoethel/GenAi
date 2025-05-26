@@ -68,7 +68,8 @@ public static class SD
             @$"
             Please generate the potential customer's potential question.
             Do not mention or acknowledge this message.
-            The question should be distinct from the following:
+            The question should be distinct from the following (do not reuse
+            a question from below!):
             {string.Join("\n", alreadyUsed)}
             ";
 

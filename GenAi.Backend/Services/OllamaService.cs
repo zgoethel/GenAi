@@ -9,8 +9,8 @@ public class OllamaService : IDisposable
     private readonly IConfiguration config;
     private readonly SemaphoreSlim concurrentLock;
 
-    private string Config_Endpoint => config["Ollama:Endpoint"]!;
-    private string Config_Model => config["Ollama:Model"]!;
+    private string Config_Endpoint(string prefix) => config[$"Ollama:{prefix}Endpoint"]!;
+    private string Config_Model(string prefix) => config[$"Ollama:{prefix}Model"]!;
     private int Config_MaxConcurrent => int.Parse(config["Ollama:MaxConcurrent"]!);
 
     public OllamaService(
@@ -26,7 +26,7 @@ public class OllamaService : IDisposable
         concurrentLock.Dispose();
     }
 
-    public async Task RunInConnection(Func<OllamaChatClient, Task> doWork, TimeSpan? waitTimeout = null)
+    public async Task RunInConnection(Func<OllamaChatClient, Task> doWork, TimeSpan? waitTimeout = null, string endpointPrefix = "")
     {
         waitTimeout ??= TimeSpan.FromSeconds(90);
         if (waitTimeout == TimeSpan.Zero)
@@ -41,7 +41,7 @@ public class OllamaService : IDisposable
         }
         try
         {
-            using var client = new OllamaChatClient(Config_Endpoint, Config_Model);
+            using var client = new OllamaChatClient(Config_Endpoint(endpointPrefix), Config_Model(endpointPrefix));
 
             await doWork(client);
         } finally
@@ -50,7 +50,7 @@ public class OllamaService : IDisposable
         }
     }
 
-    public async Task<ChatMessage> CreateAiResponse(IList<ChatMessage> chatHistory, Func<StreamingChatCompletionUpdate, Task>? wordCallback = null, TimeSpan? waitTimeout = null)
+    public async Task<ChatMessage> CreateAiResponse(IList<ChatMessage> chatHistory, Func<StreamingChatCompletionUpdate, Task>? wordCallback = null, TimeSpan? waitTimeout = null, string endpointPrefix = "")
     {
         var response = new StringBuilder();
 
@@ -67,7 +67,7 @@ public class OllamaService : IDisposable
             }
         }
 
-        await RunInConnection(run, waitTimeout: waitTimeout);
+        await RunInConnection(run, waitTimeout: waitTimeout, endpointPrefix: endpointPrefix);
 
         return new(ChatRole.Assistant, response.ToString());
     }
