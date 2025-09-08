@@ -1,5 +1,7 @@
 ﻿using HtmlAgilityPack;
 using Microsoft.Extensions.AI;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace GenAi.Backend.Services;
 
@@ -9,6 +11,8 @@ public class GeneralbotConversation(
     WebUiService webUi)
     : IDisposable, IConversation
 {
+    private readonly HashSet<string> UrlsAlreadyLoaded = [];
+
     public async Task<string> Begin(Func<StreamingChatCompletionUpdate, Task> wordCallback)
     {
         await conversation.SendMessage(ChatRole/*.System*/.User, SD.Prompts.GeneralbotInstructions, respond: false);
@@ -36,52 +40,114 @@ public class GeneralbotConversation(
         }
     }
 
-    public async Task<string> IdentifyChatMessage(string message, int depth = 0)
+    public class ChatIdentificationDetails
     {
-        if (depth == 0)
+        public bool UserWantsImageGenerated { get; set; }
+        public bool IncludeTextResponseInAdditionToImage { get; set; }
+        public bool UserWantsSimpleChatResponse { get; set; }
+        public List<string> UrlsFromUserChatBotShouldRead { get; set; } = [];
+    }
+
+    public async Task<(string, string)> IdentifyChatMessage(
+        string message,
+        Func<string, Task> write,
+        Func<Task> writeLine)
+    {
+        var chatRewritten = await ollama.CreateAiResponse(
+            [
+                new(ChatRole/*.System*/.User, SD.Prompts.ChatPromptRewriteInstructions),
+                .. conversation.ChatHistory,
+                new(ChatRole/*.System*/.User, SD.Prompts.ChatPromptRewriteInstructions),
+                new(ChatRole.User, message)
+            ]);
+        await write(chatRewritten.Text ?? "");
+        await write("\n");
+
+        try
         {
-            var responses = new List<string>();
-            for (int i = 0; i < 5; i++)
+            var chatIntentDetails = await ollama.CreateAiResponse(
+                [
+                    new(ChatRole/*.System*/.User, SD.Prompts.ChatPromptIntentSummaryInstructions),
+                    new(ChatRole.User, chatRewritten.Text)
+                ]);
+            await write(chatIntentDetails.Text ?? "");
+
+            var openJson = chatIntentDetails.Text?.IndexOf('{') ?? -1;
+            var closeJson = chatIntentDetails.Text?.LastIndexOf('}') ?? -1;
+
+            if (openJson == -1 || closeJson == -1)
+            {
+                return (SD.ChatIdentification.General, message);
+            }
+            var jsonOnly = chatIntentDetails.Text![openJson..(closeJson + 1)];
+            var identified = JsonSerializer.Deserialize<ChatIdentificationDetails>(jsonOnly)!;
+
+            foreach (var url in identified.UrlsFromUserChatBotShouldRead
+                .Select((it) => it.Contains("://") ? it : $"https://{it}")
+                .Where((it) => !UrlsAlreadyLoaded.Contains(it)))
             {
                 try
                 {
-                    var sample = await IdentifyChatMessage(message, 1);
-                    responses.Add(sample);
-                } catch (Exception)
+                    await write($"\n\nLoading `{url}`...");
+
+                    using var client = new HttpClient();
+                    client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                    
+                    var content = await client.GetStringAsync(url);
+
+                    var dom = new HtmlDocument();
+                    dom.LoadHtml(content);
+
+                    var plainText = dom.DocumentNode.SelectSingleNode("//body").InnerText;
+                    var whiteSpaceRegex = new Regex("\\s\\s+");
+                    plainText = whiteSpaceRegex.Replace(plainText, " ");
+
+                    Console.WriteLine("Plaintext Content:");
+                    Console.WriteLine(plainText);
+                    Console.WriteLine();
+
+                    var contentCrop = await ollama.CreateAiResponse(
+                        [
+                            new(ChatRole/*.System*/.User, "Recite the exact provided content word for word, cropping it down to the relevant body content and removing fragments such as navigational link text and irrelevant code."),
+                            new(ChatRole.User, plainText[0..Math.Min(plainText.Length, 20000)])
+                        ],
+                        endpointPrefix: "Cheap");
+
+                    plainText = contentCrop.Text ?? plainText;
+                    plainText = plainText[0..Math.Min(plainText.Length, 5000)];
+
+#if DEBUG
+                    /*
+                    Console.WriteLine("HTML Content:");
+                    Console.WriteLine(content);
+                    Console.WriteLine();
+                    */
+
+                    Console.WriteLine("Reworded Content:");
+                    Console.WriteLine(plainText);
+                    Console.WriteLine();
+#endif
+
+                    await conversation.SendMessage(new ChatMessage(ChatRole.User, $"Contents of `{url}`:\n" + plainText), respond: false);
+
+                    UrlsAlreadyLoaded.Add(url);
+                } catch (Exception ex)
                 {
+                    await write($"\n\n*Error loading `{url}`:*\n```\n{ex}\n```");
                 }
             }
-            return responses
-                .GroupBy((it) => it)
-                .Cast<IEnumerable<string>>()
-                .DefaultIfEmpty(["G"])
-                .MaxBy((it) => it.Count())!
-                .First();
-        }
 
-        var chatType = await ollama.CreateAiResponse(
-            [
-                new(ChatRole/*.System*/.User, SD.Prompts.ChatIdentificationInstructions),
-                new(ChatRole.User, message)
-            ]);
-
-        switch (chatType.Text!.Trim().Split("\n").First())
+            if (identified.UserWantsImageGenerated)
+            {
+                return (SD.ChatIdentification.CreateImage, chatRewritten.Text ?? message);
+            } else
+            {
+                return (SD.ChatIdentification.General, message);
+            }
+        } finally
         {
-            case SD.ChatIdentification.General:
-            case SD.ChatIdentification.CreateImage:
-            case SD.ChatIdentification.ReadSite:
-            case SD.ChatIdentification.SuggestQuestions:
-                return chatType.Text!.Trim().Split("\n").First();
-
-            default:
-                break;
+            await writeLine();
         }
-
-        if (depth > 3)
-        {
-            throw new Exception("Failed to identify the type of prompt message provided");
-        }
-        return await IdentifyChatMessage(message, depth + 1);
     }
 
     public async Task<string> Tell(string message, Func<StreamingChatCompletionUpdate, Task> wordCallback)
@@ -135,7 +201,7 @@ public class GeneralbotConversation(
                 break;
             }
 
-            var chatIdentification = await IdentifyChatMessage(userPrompt);
+            var (chatIdentification, useMessage) = await IdentifyChatMessage(userPrompt, write, writeLine);
 
             await write($"Identification = {chatIdentification}");
             await writeLine();
@@ -151,7 +217,7 @@ public class GeneralbotConversation(
 
                     await write(SD.Labels.PrefixAssistant);
 
-                    await Tell(userPrompt, async (word) =>
+                    await Tell(useMessage, async (word) =>
                     {
                         await write(word.Text!);
                     });
@@ -163,10 +229,10 @@ public class GeneralbotConversation(
 
                     await write("");
                     
-                    await conversation.SendMessage(new ChatMessage(ChatRole.User, userPrompt), respond: false);
+                    await conversation.SendMessage(new ChatMessage(ChatRole.User, useMessage), respond: false);
                     await conversation.SendMessage(new ChatMessage(ChatRole.Assistant, "Image generated."), respond: false);
 
-                    var imagePrompt = await GenerateImagePrompt(userPrompt);
+                    var imagePrompt = await GenerateImagePrompt(useMessage);
 
                     await write("Generating an image with the following prompt:\n\n");
                     await write($"`{imagePrompt}`");
@@ -193,7 +259,7 @@ public class GeneralbotConversation(
                     await write("Enter \"Cancel\" to exit.");
                     await writeLine();
 
-                    await conversation.SendMessage(new(ChatRole.User, userPrompt), respond: false);
+                    await conversation.SendMessage(new(ChatRole.User, useMessage), respond: false);
                     await conversation.SendMessage(new(ChatRole.Assistant, "Content loaded."), respond: false);
 
                     var requestUrl = await readLine(cancellationToken);
@@ -252,7 +318,7 @@ public class GeneralbotConversation(
 
                     await write("Select one of the possible responses (1-3), or enter a custom response.\n");
 
-                    await conversation.SendMessage(new ChatMessage(ChatRole.User, userPrompt), respond: false);
+                    await conversation.SendMessage(new ChatMessage(ChatRole.User, useMessage), respond: false);
 
                     var possibleResponses = new List<string>();
                     var index = 1;

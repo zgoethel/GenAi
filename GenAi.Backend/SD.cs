@@ -89,6 +89,7 @@ public static class SD
             Begin your introduction. Do not acknowledge this message.
             """;
 
+        /*
         public const string ChatIdentificationInstructions =
             $@"
             Identity the type of the last provided user prompt.
@@ -101,6 +102,39 @@ public static class SD
             Output only a single letter with no quotes, introduction, or outro;
             output only a single character.
             ";
+        */
+        public const string ChatPromptRewriteInstructions =
+            """
+            You are a transparent translator in a multi-chain process. Do not
+            apply your own influence or change content in a way that makes your
+            presence known.
+            Rewrite the user's most recent chat, applying rules:
+             * Include any contextual information from chat history which would
+               be necessary to interpret the user's prompt on its own
+             * Convey in the rewritten prompt what the user's intended action is
+               accounting for context from previous chat history (e.g., if the
+               user previously requested an image and is asking for a revision,
+               include the context that the user is wanting an image)
+            Do not mention yourself, your translator role,
+            or the chatbot; you are rewriting only the user's role in the
+            conversation and including crucial context.
+            """;
+        public const string ChatPromptIntentSummaryInstructions =
+            """
+            *Output all content in JSON. Do not use markdown or provide any
+            content other than the requested JSON format itself.*
+            Use only the JSON format:
+
+            {
+                "UserWantsImageGenerated": {boolean},
+                "IncludeTextResponseInAdditionToImage": {boolean},
+                "UserWantsSimpleChatResponse": {boolean},
+                "UrlsFromUserChatBotShouldRead": [{string}, ...]
+            }
+
+            Given a user's prompt, generate a JSON summary in the agreed format
+            of the user's intent. 
+            """;
 
         public const string ImagePromptInstructions =
             """

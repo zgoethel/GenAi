@@ -50,13 +50,16 @@ public class OllamaService : IDisposable
         }
     }
 
-    public async Task<ChatMessage> CreateAiResponse(IList<ChatMessage> chatHistory, Func<StreamingChatCompletionUpdate, Task>? wordCallback = null, TimeSpan? waitTimeout = null, string endpointPrefix = "")
+    public async Task<ChatMessage> CreateAiResponse(IList<ChatMessage> chatHistory, Func<StreamingChatCompletionUpdate, Task>? wordCallback = null, TimeSpan? waitTimeout = null, string endpointPrefix = "", int? maxTokens = 4000)
     {
         var response = new StringBuilder();
 
         async Task run(OllamaChatClient client)
         {
-            await foreach (var item in client.CompleteStreamingAsync(chatHistory))
+            await foreach (var item in client.CompleteStreamingAsync(chatHistory, options: new()
+            {
+                MaxOutputTokens = maxTokens
+            }))
             {
                 if (wordCallback is not null)
                 {
