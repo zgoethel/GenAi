@@ -1,0 +1,13 @@
+version: '3'
+services:
+  genai.web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${HTTP_PORT}:8080
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT}
+    volumes:
+      - ${APP_SETTINGS}:/app/appsettings.${ASPNETCORE_ENVIRONMENT}.json:ro
+    restart: always
